@@ -93,47 +93,47 @@ def is_in_scope(target: str, allowed_scope: list[str]) -> bool:
 
 SCAN_PROFILES: dict[str, list[str]] = {
     # Is the host even up? (host discovery only, no port scan)
-    "ping":        ["-sT",  "-sT", "-sn"],
+    "ping":        ["-sT", "-sn"],
 
     # ARP/quick liveness sweep of a range without port scanning.
-    "discovery":   ["-sT",  "-sT", "-sn", "-PR", "-PE", "-PP", "-PS21,22,80,443", "-T4"],
+    "discovery":   ["-sT", "-sn", "-PR", "-PE", "-PP", "-PS21,22,80,443", "-T4"],
 
     # Fast scan of the most common 100 ports — very fast triage.
-    "fast":        ["-sT",  "-sT", "-T4", "-F"],
+    "fast":        ["-sT", "-T4", "-F"],
 
     # Fast scan of the most common 1000 ports.
-    "quick":       ["-sT",  "-sT", "-T4", "--top-ports", "1000"],
+    "quick":       ["-sT", "-T4", "--top-ports", "1000"],
 
     # Service + version detection on common ports.
-    "version":     ["-sT",  "-sT", "-sV", "-T4"],
+    "version":     ["-sT", "-sV", "-T4"],
 
     # Everything: all 65535 ports + version detection.
-    "full":        ["-sT",  "-sT", "-p-", "-sV", "-T4"],
+    "full":        ["-sT", "-p-", "-sV", "-T4"],
 
     # Default safe scripts + version detection (-sC == --script=default).
-    "default":     ["-sT",  "-sT", "-sC", "-sV", "-T4"],
+    "default":     ["-sT", "-sC", "-sV", "-T4"],
 
     # Aggressive: OS detect + version + default scripts + traceroute.
-    "aggressive":  ["-sT",  "-sT", "-A", "-T4"],
+    "aggressive":  ["-sT", "-A", "-T4"],
 
     # OS fingerprinting + version detection.
-    "os":          ["-sT",  "-sT", "-O", "-sV", "-T4"],
+    "os":          ["-sT", "-O", "-sV", "-T4"],
 
     # UDP scan (slow — keep the port set small).
-    "udp":         ["-sT",  "-sT", "-sU", "-T4", "--top-ports", "50"],
+    "udp":         ["-sT", "-sU", "-T4", "--top-ports", "50"],
 
     # Combined TCP+UDP top ports.
-    "udp_tcp":     ["-sT",  "-sT", "-sS", "-sU", "-T4", "--top-ports", "50"],
+    "udp_tcp":     ["-sT", "-sS", "-sU", "-T4", "--top-ports", "50"],
 
     # Vulnerability sweep: version detection + the NSE 'vuln' scripts.
-    "vuln":        ["-sT",  "-sT", "-sV", "-T4", "--script=vuln"],
+    "vuln":        ["-sT", "-sV", "-T4", "--script=vuln"],
 
     # Common web ports + http NSE enumeration scripts.
-    "web":         ["-sT",  "-sT", "-sV", "-T4", "-p", "80,443,8080,8443,8000,8888",
+    "web":         ["-sT", "-sV", "-T4", "-p", "80,443,8080,8443,8000,8888",
                     "--script=http-enum,http-title,http-headers,http-methods"],
 
     # Stealthy slow SYN scan to stay under simple rate alarms.
-    "stealth":     ["-sT",  "-sT", "-sS", "-T2", "-f", "--top-ports", "1000"],
+    "stealth":     ["-sT", "-sS", "-T2", "-f", "--top-ports", "1000"],
 }
 
 # Allow-listed NSE script categories the agent may request.
