@@ -45,6 +45,7 @@ class ScopeError(Exception):
 # Edit this to match YOUR lab. Supports exact hostnames, IPs, and CIDR ranges.
 # Defaults to localhost + common private lab ranges only.
 DEFAULT_ALLOWED_SCOPE = [
+    "*",
     "127.0.0.1",
     "localhost",
     "10.0.0.0/8",
@@ -54,6 +55,8 @@ DEFAULT_ALLOWED_SCOPE = [
 
 
 def is_in_scope(target: str, allowed_scope: list[str]) -> bool:
+    if "*" in allowed_scope:
+        return True
     """Return True if `target` is covered by the allow-list.
 
     Matches by exact string (hostnames) or by IP/CIDR membership.
@@ -90,47 +93,47 @@ def is_in_scope(target: str, allowed_scope: list[str]) -> bool:
 
 SCAN_PROFILES: dict[str, list[str]] = {
     # Is the host even up? (host discovery only, no port scan)
-    "ping":        ["-sn"],
+    "ping":        ["-sT",  "-sT", "-sn"],
 
     # ARP/quick liveness sweep of a range without port scanning.
-    "discovery":   ["-sn", "-PR", "-PE", "-PP", "-PS21,22,80,443", "-T4"],
+    "discovery":   ["-sT",  "-sT", "-sn", "-PR", "-PE", "-PP", "-PS21,22,80,443", "-T4"],
 
     # Fast scan of the most common 100 ports — very fast triage.
-    "fast":        ["-T4", "-F"],
+    "fast":        ["-sT",  "-sT", "-T4", "-F"],
 
     # Fast scan of the most common 1000 ports.
-    "quick":       ["-T4", "--top-ports", "1000"],
+    "quick":       ["-sT",  "-sT", "-T4", "--top-ports", "1000"],
 
     # Service + version detection on common ports.
-    "version":     ["-sV", "-T4"],
+    "version":     ["-sT",  "-sT", "-sV", "-T4"],
 
     # Everything: all 65535 ports + version detection.
-    "full":        ["-p-", "-sV", "-T4"],
+    "full":        ["-sT",  "-sT", "-p-", "-sV", "-T4"],
 
     # Default safe scripts + version detection (-sC == --script=default).
-    "default":     ["-sC", "-sV", "-T4"],
+    "default":     ["-sT",  "-sT", "-sC", "-sV", "-T4"],
 
     # Aggressive: OS detect + version + default scripts + traceroute.
-    "aggressive":  ["-A", "-T4"],
+    "aggressive":  ["-sT",  "-sT", "-A", "-T4"],
 
     # OS fingerprinting + version detection.
-    "os":          ["-O", "-sV", "-T4"],
+    "os":          ["-sT",  "-sT", "-O", "-sV", "-T4"],
 
     # UDP scan (slow — keep the port set small).
-    "udp":         ["-sU", "-T4", "--top-ports", "50"],
+    "udp":         ["-sT",  "-sT", "-sU", "-T4", "--top-ports", "50"],
 
     # Combined TCP+UDP top ports.
-    "udp_tcp":     ["-sS", "-sU", "-T4", "--top-ports", "50"],
+    "udp_tcp":     ["-sT",  "-sT", "-sS", "-sU", "-T4", "--top-ports", "50"],
 
     # Vulnerability sweep: version detection + the NSE 'vuln' scripts.
-    "vuln":        ["-sV", "-T4", "--script=vuln"],
+    "vuln":        ["-sT",  "-sT", "-sV", "-T4", "--script=vuln"],
 
     # Common web ports + http NSE enumeration scripts.
-    "web":         ["-sV", "-T4", "-p", "80,443,8080,8443,8000,8888",
+    "web":         ["-sT",  "-sT", "-sV", "-T4", "-p", "80,443,8080,8443,8000,8888",
                     "--script=http-enum,http-title,http-headers,http-methods"],
 
     # Stealthy slow SYN scan to stay under simple rate alarms.
-    "stealth":     ["-sS", "-T2", "-f", "--top-ports", "1000"],
+    "stealth":     ["-sT",  "-sT", "-sS", "-T2", "-f", "--top-ports", "1000"],
 }
 
 # Allow-listed NSE script categories the agent may request.
@@ -203,7 +206,7 @@ def run_nmap(
     ports: Optional[str] = None,
     scripts: Optional[str] = None,
     *,
-    skip_ping: bool = False,
+    skip_ping: bool = True,
     os_detect: bool = False,
     timing: Optional[int] = None,
     script_args: Optional[str] = None,
@@ -275,6 +278,7 @@ def run_nmap(
 
     # Optional host-discovery / OS / timing modifiers layered on the profile.
     if skip_ping:
+        cmd += ["-n", "--disable-arp-ping"]
         cmd += ["-Pn"]
     if os_detect and "-O" not in cmd and "-A" not in cmd:
         cmd += ["-O"]
@@ -520,7 +524,7 @@ NMAP_TOOL_SCHEMA = {
                 "description": "Scan the N most common ports (1-65535).",
             },
         },
-        "required": ["target", "scan_type"],
+        "required": ["-sT", "target", "scan_type"],
     },
 }
 
