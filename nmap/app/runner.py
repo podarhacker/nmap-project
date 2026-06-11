@@ -66,7 +66,30 @@ def extract_findings(payload: dict) -> list[dict]:
                     "tool": "nmap", "severity": "info",
                     "name": str(sid)[:255], "detail": str(output)[:2000],
                 })
+            # per-port NSE scripts (the vuln scan attaches results here, not at
+            # host level) -> info-level findings, labelled with the port.
+            for port in (host.get("ports") or []):
+                for sid, output in (port.get("scripts") or {}).items():
+                    label = f"{port.get('port')}/{port.get('protocol', 'tcp')} {sid}"
+                    out.append({
+                        "tool": "nmap", "severity": "info",
+                        "name": label[:255], "detail": str(output)[:2000],
+                    })
     return out
+
+
+_SEV_KEYS = ("critical", "high", "medium", "low", "info")
+
+
+def _count_from_findings(findings: list[dict]) -> dict[str, int]:
+    """Severity tally over the extracted findings, so the dashboard badges
+    always match the Findings table exactly."""
+    counts = {s: 0 for s in _SEV_KEYS}
+    for f in findings:
+        sev = str(f.get("severity", "")).lower()
+        if sev in counts:
+            counts[sev] += 1
+    return counts
 
 
 def _persist(scan_id: int, **fields) -> None:
@@ -119,13 +142,17 @@ def run_scan(scan_id: int) -> None:
 
         md = report.render_markdown(run)
         html = report.render_html(run)
-        counts = report.count_severities(md)
 
         # Structured findings (offline bundle carries 'results' with parsed/hosts).
         try:
             findings = extract_findings(json.loads(bundle_json))
         except Exception:
             findings = []
+
+        # Badges count the findings themselves so they always agree with the
+        # Findings table. Fall back to scraping the report text only when no
+        # structured findings were extracted.
+        counts = _count_from_findings(findings) if findings else report.count_severities(md)
 
         _persist(
             scan_id,
