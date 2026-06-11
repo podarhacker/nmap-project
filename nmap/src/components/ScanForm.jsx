@@ -4,7 +4,7 @@ import { api } from '../api.js'
 // Queue a new scan. Scope is optional (comma-separated CIDRs/hosts); blank lets
 // the backend default to localhost + private ranges.
 export default function ScanForm({ onCreated }) {
-  const [target, setTarget] = useState('127.0.0.1')
+  const [target, setTarget] = useState('')
   const [scope, setScope] = useState('')
   const [mode, setMode] = useState('offline')
   const [provider, setProvider] = useState('anthropic')
@@ -22,7 +22,7 @@ export default function ScanForm({ onCreated }) {
       if (mode === 'llm') body.provider = provider
       const res = await api.createScan(body)
       onCreated(res.id)
-      setTarget('127.0.0.1')
+      setTarget('')
       setScope('')
     } catch (e) {
       setErr(e?.response?.data?.detail || e.message || 'failed to queue scan')
@@ -34,7 +34,7 @@ export default function ScanForm({ onCreated }) {
   return (
     <form className="form" onSubmit={submit}>
       <label>Target (host / IP / domain)</label>
-      <input value={target} onChange={(e) => setTarget(e.target.value)} placeholder="127.0.0.1" />
+      <input value={target} onChange={(e) => setTarget(e.target.value)} placeholder="www.example.com" />
 
       <label>Scope (optional, comma-separated)</label>
       <input value={scope} onChange={(e) => setScope(e.target.value)} placeholder="192.168.56.0/24" />
